@@ -31,9 +31,9 @@ class FormWidget(QWidget):
         a=TestBokeh.TestBokeh()
         html= a.main()
         html.find("<head>")
-        with open("test2.html","w")as f:
-            f.write(html)
-        #self.browser.setHtml(html)x`
+        # with open("test2.html","w")as f:
+        #     f.write(html)
+        
         self.browser.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
         self.browser.load(QUrl('file:///test2.html'))
 
@@ -49,7 +49,8 @@ class FormWidget(QWidget):
         dev_view = QtWebEngineWidgets.QWebEngineView()
         self.mainLayout.addWidget(dev_view, 100)
         self.browser.page().setDevToolsPage(self.dev.page())
-        # self.page().setDevToolsPage(self.browser.page())
+
+        #self.page().setDevToolsPage(self.browser.page())
     def __controls_test(self):
         self.browser.page().runJavaScript("""$("div:contains('Wiggle')").click()""")
 
@@ -60,9 +61,9 @@ class FormWidget(QWidget):
         self.test = QPushButton("Start JS Code")
         self.browser = QWebEngineView()
         self.dev = QWebEngineView()
-       # self.hBox.addWidget(QWidget(),stretch=20)
+        self.hBox.addWidget(QWidget(),stretch=20)
         self.hBox.addWidget(self.browser,stretch=50)
-       # self.hBox.addWidget(self.dev,stretch=20)
+        self.hBox.addWidget(self.dev,stretch=20)
         self.hBox.addWidget(self.getboundsbutton,stretch=10)
         self.hBox.addWidget(self.test, stretch=20)
         self.vbox.addLayout(self.hBox)
