@@ -1,76 +1,77 @@
 #!/usr/local/bin/python36
+import os
 import sys
-
 from PyQt5 import QtWebEngineWidgets, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import *
+
+from Views import ExitAction, OpenFilesAction, GAction, SAction
+from Views.Controllers import BokehController
 from bokeh_fc import TestBokeh
+from string import Template
+
+from Views.Widgets import BokehWidget, SelectFileDataWidget
+
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
-        self.form_widget = FormWidget(self)
-
-        self.setGeometry(0,0,900,900)
-        _widget = QWidget()
-        _layout = QVBoxLayout(_widget)
-        _layout.addWidget(self.form_widget)
+    def __init__(self):
+        super().__init__()
+        self.__bokeh_controller = BokehController(self)
+        _widget = MainWidget(self.__bokeh_controller)
+        self.setGeometry(0, 0, 1600, 900)
         self.setCentralWidget(_widget)
 
 
-class FormWidget(QWidget):
-    def __init__(self, parent):
-        super(FormWidget, self).__init__(parent)
-       # self.__controls()
-        self.__layout()
+class MainWidget(QWidget):
+    def __init__(self, __bokeh_controller, parent=None):
+        super(MainWidget, self).__init__(parent, )
+        self.__select_data_widget = SelectFileDataWidget(self.click_data)
+        self.main_v_layout = QVBoxLayout()
+        self.main_h_layout = QHBoxLayout()
+        self.main_v_layout.addWidget(self.__generate_menu_bar())
+        self.main_v_layout.addWidget(self.__generate_tool_bar())
 
-    def __controls(self):
+        self.main_h_layout.addWidget(self.__select_data_widget, stretch=25)
+        # TODO хз по идее контролера здесь не должно быть во  view, но как тогда пробросить фк клика на
+        self.__bokeh_controller = __bokeh_controller
+        self.bokeh_widget = self.__bokeh_controller.get_bokeh_widget()
+        self.main_h_layout.addWidget(self.bokeh_widget, stretch=75)
+        self.main_v_layout.addLayout(self.main_h_layout)
+        self.setLayout(self.main_v_layout)
 
-        a=TestBokeh.TestBokeh()
-        html= a.main()
-        html.find("<head>")
-        # with open("test2.html","w")as f:
-        #     f.write(html)
-        
-        self.browser.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
-        self.browser.load(QUrl('file:///test2.html'))
+    def __generate_menu_bar(self):
+        self.__main_menu_bar = QMenuBar()
+        self.__main_menu_bar_menu = self.__main_menu_bar.addMenu('&Menu')
+        self.__main_menu_ba_normalize = self.__main_menu_bar.addMenu('&Normalize Data')
+        self.__main_menu_bar_filtering = self.__main_menu_bar.addMenu('&Filtering')
+        self.__main_menu_bar_layout = self.__main_menu_bar.addMenu('&Layout')
+        self.__main_menu_bar_print_seism = self.__main_menu_bar.addMenu('&Print Seismogram')
 
-        self.mainLayout = QtWidgets.QVBoxLayout()
-        self.webView = QtWebEngineWidgets.QWebEngineView()
-        self.mainLayout.addWidget(self.webView, 100)
-        self.webView.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.JavascriptEnabled, True)
-        self.webView.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.LocalContentCanAccessRemoteUrls,
-                                             True)
-        self.webView.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.ErrorPageEnabled, True)
-        self.webView.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.PluginsEnabled, True)
+        self.__main_menu_bar_menu.addAction(
+            OpenFilesAction(self,
+                            self.__select_data_widget.get_open_file_dialog_load_data_func())
+        )
 
-        dev_view = QtWebEngineWidgets.QWebEngineView()
-        self.mainLayout.addWidget(dev_view, 100)
-        self.browser.page().setDevToolsPage(self.dev.page())
+        self.__main_menu_bar_menu.addAction(ExitAction(self))
+        self.__main_menu_ba_normalize.addAction(ExitAction(self))
+        self.__main_menu_bar_filtering.addAction(ExitAction(self))
+        self.__main_menu_bar_layout.addAction(ExitAction(self))
+        self.__main_menu_bar_print_seism.addAction(ExitAction(self))
 
-        #self.page().setDevToolsPage(self.browser.page())
-    def __controls_test(self):
-        self.browser.page().runJavaScript("""$("div:contains('Wiggle')").click()""")
+        return self.__main_menu_bar
 
-    def __layout(self):
-        self.vbox = QVBoxLayout()
-        self.hBox = QVBoxLayout()
-        self.getboundsbutton = QPushButton("Start Bokeh")
-        self.test = QPushButton("Start JS Code")
-        self.browser = QWebEngineView()
-        self.dev = QWebEngineView()
-        self.hBox.addWidget(QWidget(),stretch=20)
-        self.hBox.addWidget(self.browser,stretch=50)
-        self.hBox.addWidget(self.dev,stretch=20)
-        self.hBox.addWidget(self.getboundsbutton,stretch=10)
-        self.hBox.addWidget(self.test, stretch=20)
-        self.vbox.addLayout(self.hBox)
-        self.setLayout(self.vbox)
+    def __generate_tool_bar(self):
+        self.toolbar = QToolBar()  # self.addToolBar('Exit')
+        self.toolbar.addAction(GAction(self))
+        self.toolbar.addAction(SAction(self))
+        self.toolbar.addAction(ExitAction(self))
+        return self.toolbar
 
-        self.getboundsbutton.clicked.connect(self.__controls)
-        self.test.clicked.connect(self.__controls_test)
+    def click_data(self, currentItem):
+        self.path_name = currentItem
+        self.__bokeh_controller.add_tab(currentItem)
 
 
 def main():

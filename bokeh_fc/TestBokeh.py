@@ -6,7 +6,7 @@ from bokeh import events
 from bokeh.layouts import row, column
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import CustomJS,Slider, Grid, LinearAxis, MultiLine, Patches, CheckboxButtonGroup,HoverTool, Button
-from bokeh.embed import json_item, file_html
+from bokeh.embed import components
 from bokeh.resources import CDN
 from scipy import signal
 
@@ -29,13 +29,18 @@ grid=True
 clipping=True
 wiggle=True
 
-file1='bokeh_fc/240_cut_edited.segy'
+
 
 
 wind_dowm,wind_up=500,0
 class TestBokeh():
 
-    def __init__(self):
+    def __init__(self,file):
+        self.file=file
+        S = SegReader()
+        S.open(self.file)
+        self.traces, self.bin_head, self.trace_head = S.read_all()
+
         pass
 
     def insert_zeros_in_trace(self,trace):
@@ -77,16 +82,14 @@ class TestBokeh():
             div.text = lines.join("\\n");
         """ % (attributes, style))
     def main(self):
-        print("startb2")
-        S = SegReader()
-        S.open(file1)
-        Traces, bin_head, trace_head = S.read_all()
-        length = np.arange(0, len(Traces[0]))
-        offsets = trace_head['offset']
+    
+     
+        length = np.arange(0, len(self.traces[0]))
+        offsets = self.trace_head['offset']
         step = (abs(offsets[len(offsets) - 1]) + abs(offsets[0])) / (len(offsets) - 1)
         first_sou = 0
-        last_sou = len(Traces) * step
-        Num_of_traces = len(Traces)
+        last_sou = len(self.traces) * step
+        Num_of_traces = len(self.traces)
         stoffset = {i: i * step for i in range(Num_of_traces)}
         clip = step - 0.1
 
@@ -94,9 +97,9 @@ class TestBokeh():
         #    Traces_step1[Traces_step1 > clip] = clip
         #  Traces_step1[Traces_step1 < -clip] = -clip
 
-        Traces_final = np.zeros((len(Traces), len(Traces[0][wind_up:wind_dowm])))
+        Traces_final = np.zeros((len(self.traces), len(self.traces[0][wind_up:wind_dowm])))
         for i in range(0, Num_of_traces):
-            Traces_final[i] = Traces[i][wind_up:wind_dowm]
+            Traces_final[i] = self.traces[i][wind_up:wind_dowm]
         if detrend == 1:
             Traces_final = signal.detrend(Traces_final)
 
@@ -104,9 +107,9 @@ class TestBokeh():
         Trace_mass = []
         Time_mass = []
         for k in range(Num_of_traces):
-            Traces = Traces_final[k] * step / np.max(Traces_final[k])
-            Vareas = np.where(Traces > 0, Traces, 0)
-            Traces_step1, Time_step1 = self.insert_zeros_in_trace(Traces)
+            self.traces = Traces_final[k] * step / np.max(Traces_final[k])
+            Vareas = np.where(self.traces > 0, self.traces, 0)
+            Traces_step1, Time_step1 = self.insert_zeros_in_trace(self.traces)
 
             Traces_step11 = Traces_step1
             Traces_step11[-1] = 0
@@ -252,7 +255,7 @@ class TestBokeh():
 
         plot.add_layout(Grid(dimension=0, ticker=xaxis.ticker))
         plot.add_layout(Grid(dimension=1, ticker=yaxis.ticker))
-
+        checkbox_button_group.visible=False
         layout1 = row(
             column(plot, gain_slider, checkbox_button_group),
 
@@ -264,4 +267,4 @@ class TestBokeh():
         layout1 = column( gain_slider, checkbox_button_group,plot,)
                 #return json.dumps(json_item(plot,"myplot"))
 
-        return file_html(layout1, CDN, "my plot")
+        return components(layout1)
